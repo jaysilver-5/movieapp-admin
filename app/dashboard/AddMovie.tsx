@@ -42,7 +42,7 @@ const AddMovie: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [series, setSeries] = useState(false);
-  const [step, setStep] = useState<number>(1);
+  const [step, setStep] = useState<number>(0);
   const [se, setSe] = useState<string>(""); // Season number
   const [ep, setEp] = useState<string>(""); // Episode number
   const [newEpisodeTitle, setNewEpisodeTitle] = useState<string>(""); // Title for new episode
@@ -52,47 +52,8 @@ const AddMovie: React.FC = () => {
   const [episodes, setEpisodes] = useState<Episode[]>([]); // List of episodes
   const [seriesData, setSeriesData] = useState<Series[]>([]); // Final list of series with all seasons and episodes
 
-  const handleNextOrSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-  
-    if (series && step === 0) {
-      // If it's a series and user is on step 0, proceed to step 1
-      setStep(1);
-    } else {
-      // If it's a movie or final step for series, submit data
-      await handleSubmit(e);
-    }
-  };
+  console.log(episodes)
 
-  console.log(seriesData)
-
-  const handleAddEpisode = (): void => {
-    if (se && ep && newEpisodeTitle.trim() !== "" && downloadLink.trim() !== "") {
-      const newEpisode: Episode = {
-        season: se,
-        episode: ep,
-        title: newEpisodeTitle.trim(),
-        downloadLink, // Use the single download link
-      };
-
-      setEpisodes([...episodes, newEpisode]);
-      setDownloadLink(""); // Reset download link for the next episode
-      setNewEpisodeTitle(""); // Reset episode title input
-      setSe(""); // Reset season input
-      setEp(""); // Reset episode input
-    }
-  };
-
-  const finalizeSeries = (): void => {
-    if (episodes.length > 0) {
-      const newSeries: Series = {
-        title: seriesTitle,
-        episodes: [...episodes],
-      };
-      setSeriesData([...seriesData, newSeries]);
-      setEpisodes([]); // Clear episodes for the next series
-    }
-  };
 
   const handleRemoveEpisode = (indexToRemove: number): void => {
     setEpisodes(episodes.filter((_, index) => index !== indexToRemove));
@@ -104,27 +65,6 @@ const AddMovie: React.FC = () => {
       setNewCategory("");
     }
   };
-
-  // const resetInputs = () => {
-  //   setTitle("");
-  //   setTrailerUrl("");
-  //   setPosterUrl("");
-  //   setDownloadUrl("");
-  //   setBannerUrl("");
-  //   setSynopsis("");
-  //   setReleaseDate("");
-  //   setCategories([]);
-  //   setFill(false);
-  //   setSeries(false);
-  //   setStep(0);
-  //   setSeriesData([]);
-  //   setEpisodes([]);
-  //   setSeriesTitle("");
-  //   setSe("");
-  //   setEp("");
-  //   setNewEpisodeTitle("");
-  //   setDownloadLink("");
-  // };
 
   const resetInputs = () => {
     setTitle("");
@@ -143,176 +83,147 @@ const AddMovie: React.FC = () => {
     setNewEpisodeTitle("");
     setDownloadLink("");
   };
-  
 
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  
+  // const handleSubmit = async () => {
   //   try {
   //     const moviesCollection = collection(db, "movies");
-  //     const dataToSave: any = {
-  //       title,
-  //       trailerUrl,
-  //       posterUrl,
-  //       downloadUrl,
-  //       bannerUrl,
-  //       synopsis,
-  //       releaseDate,
-  //       categories,
-  //       createdAt: new Date(),
-  //     };
   
-  //     if (series) {
-  //       // Include series data
-  //       dataToSave.seriesData = seriesData;
-  //     } else {
-  //       dataToSave.season = season;
-  //       dataToSave.episode = episode;
-  //       dataToSave.fill = fill;
-  //     }
+  //     // Prepare the data to save
+  //     const dataToSave = series
+  //       ? {
+  //           title,
+  //           trailerUrl,
+  //           posterUrl,
+  //           bannerUrl,
+  //           synopsis,
+  //           releaseDate,
+  //           categories,
+  //           series: true,
+  //           episodes: episodes.map((ep) => ({
+  //             season: ep.season,
+  //             episode: ep.episode,
+  //             title: ep.title,
+  //             downloadLink: ep.downloadLink,
+  //           })),
+  //         }
+  //       : {
+  //           title,
+  //           trailerUrl,
+  //           downloadUrl,
+  //           posterUrl,
+  //           bannerUrl,
+  //           synopsis,
+  //           releaseDate,
+  //           categories,
+  //           series: false,
+  //         };
+
+
+  //         console.log(dataToSave)
   
+  //     // Log the raw and structured data for debugging
+  //     console.log("Raw Data:", { title, episodes });
+  //     console.log("Structured Data to Save:", JSON.stringify(dataToSave, null, 2));
+  
+  //     // Push the data to Firestore
   //     await addDoc(moviesCollection, dataToSave);
   
-  //     setMessage("Movie/Series added successfully!");
+  //     // Provide feedback to the user
+  //     setMessage("Submitted successfully!");
+  //     console.log("Data submitted successfully");
+  
+  //     // Reset inputs
   //     resetInputs();
   //   } catch (error) {
-  //     console.error("Error adding movie/series: ", error);
-  //     setMessage("Failed to add movie/series.");
-  //   } finally {
-  //     setLoading(false);
+  //     console.error("Error saving data:", error);
   //   }
   // };
   
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-
-  //   try {
-  //     const moviesCollection = collection(db, "movies");
-  //     await addDoc(moviesCollection, {
-  //       title,
-  //       trailerUrl,
-  //       posterUrl,
-  //       downloadUrl,
-  //       bannerUrl,
-  //       season,
-  //       episode,
-  //       synopsis,
-  //       releaseDate,
-  //       fill,
-  //       series,
-  //       categories,
-  //       createdAt: new Date(),
-  //     });
-
-  //     setMessage("Movie added successfully!");
-  //     setTitle("");
-  //     setTrailerUrl("");
-  //     setPosterUrl("");
-  //     setDownloadUrl("");
-  //     setSeason("");
-  //     setEpisode("");
-  //     setSynopsis("");
-  //     setReleaseDate("");
-  //     setCategories([]);
-  //     setFill(false);
-  //   } catch (error) {
-  //     console.error("Error adding movie: ", error);
-  //     setMessage("Failed to add movie.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   setLoading(true);
-  
-  //   try {
-  //     const moviesCollection = collection(db, "movies");
-  //     const dataToSave: any = {
-  //       title,
-  //       trailerUrl,
-  //       posterUrl,
-  //       bannerUrl,
-  //       synopsis,
-  //       releaseDate,
-  //       categories,
-  //       createdAt: new Date(),
-  //     };
-  
-  //     if (series) {
-  //       // Include series data if applicable
-  //       dataToSave.seriesData = seriesData; // Store the series and its episodes
-  //     } else {
-  //       // Include single movie-specific fields
-  //       dataToSave.downloadUrl = downloadUrl;
-  //       dataToSave.fill = fill;
-  //     }
-  
-  //     await addDoc(moviesCollection, dataToSave);
-  
-  //     setMessage("Movie/Series added successfully!");
-  //     resetInputs();
-  //   } catch (error) {
-  //     console.error("Error adding movie/series: ", error);
-  //     setMessage("Failed to add movie/series.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
+  const handleSubmit = async () => {
     try {
       const moviesCollection = collection(db, "movies");
-      const dataToSave: any = {
-        title,
-        trailerUrl,
-        posterUrl,
-        bannerUrl,
-        synopsis,
-        releaseDate,
-        categories,
-        createdAt: new Date(),
-      };
-
-      if (series) {
-        // Build seriesData with proper structure
-        const structuredSeriesData = seriesData.map((season: any) => ({
-          season: season.season,
-          episodes: season.episodes.map((episode: any) => ({
-            episode: episode.episode,
-            episodeTitle: episode.episodeTitle,
-            downloadLink: episode.downloadLink,
-          })),
-        }));
-
-        // Include structured series data
-        dataToSave.seriesData = structuredSeriesData;
-      } else {
-        // Include single movie-specific fields
-        dataToSave.downloadUrl = downloadUrl;
-        dataToSave.fill = fill;
-      }
-
-      // Save to Firestore
+  
+      // Prepare the data to save
+      const dataToSave = series
+        ? {
+            title,
+            trailerUrl,
+            posterUrl,
+            bannerUrl,
+            synopsis,
+            releaseDate,
+            categories,
+            series: true,
+            episodes: episodes.map((ep) => ({
+              season: ep.season,
+              episode: ep.episode,
+              title: ep.title,
+              downloadLink: ep.downloadLink,
+            })),
+          }
+        : {
+            title,
+            trailerUrl,
+            downloadUrl,
+            posterUrl,
+            bannerUrl,
+            synopsis,
+            releaseDate,
+            categories,
+            series: false,
+          };
+  
+      console.log("Raw Data:", { title, episodes });
+      console.log("Structured Data to Save:", JSON.stringify(dataToSave, null, 2));
+  
+      // Push the data to Firestore
       await addDoc(moviesCollection, dataToSave);
-
-      setMessage("Movie/Series added successfully!");
+  
+      // Provide feedback to the user
+      setMessage("Submitted successfully!");
+      console.log("Data submitted successfully");
+  
+      // Reset inputs
       resetInputs();
+  
+      // Set success message timeout and reset step
+      setTimeout(() => {
+        setMessage("");
+        setStep(0);
+      }, 3000); // Message disappears after 3 seconds
     } catch (error) {
-      console.error("Error adding movie/series: ", error);
-      setMessage("Failed to add movie/series.");
-    } finally {
-      setLoading(false);
+      console.error("Error saving data:", error);
+    }
+  };
+  
+
+  const handleAddEpisode = (): void => {
+    if (se && ep && newEpisodeTitle && downloadLink) {
+      const newEpisode: Episode = {
+        season: se,
+        episode: ep,
+        title: newEpisodeTitle,
+        downloadLink,
+      };
+      setEpisodes([...episodes, newEpisode]);
+      setSe("");
+      setEp("");
+      setNewEpisodeTitle("");
+      setDownloadLink("");
     }
   };
 
+
+  const handleNextOrSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (series && step === 0) {
+      setStep(1);
+    } else if (!series) {
+      await handleSubmit();
+    } else {
+      handleSubmit()
+    }
+  };
 
   return (
     <div className="overflow-y-auto flex items-center justify-center py-6 px-4 bg-gray-100">
@@ -321,7 +232,7 @@ const AddMovie: React.FC = () => {
         {step == 1 && <div onClick={() => setStep(0)} className="absolute top-4 left-4 w-10 sm:w-6 sm:h-6 h-10 bg-[#d7d7d7] flex items-center justify-center rounded-full">
           <MdOutlineChevronLeft className="text-[32px] font-thin text-[#585656]"/>
         </div>}
-        <form onSubmit={handleSubmit} className="-space-y-2">
+        <form  onSubmit={handleNextOrSubmit} className="-space-y-2">
           {step == 0 &&
           
         <div>
@@ -482,15 +393,6 @@ const AddMovie: React.FC = () => {
                 </div>
               </div>
       
-              {/* Finalize Series Button */}
-              <button
-                type="button"
-                className="mt-4 px-4 py-2 bg-green-600 text-white rounded-full hover:bg-green-700"
-                onClick={finalizeSeries}
-              >
-                Finalize Series
-              </button>
-      
               {/* Series Data */}
               {seriesData.length > 0 && (
                 <div className="mt-6">
@@ -514,7 +416,7 @@ const AddMovie: React.FC = () => {
           )}
 
           {/* Submit Button */}
-          {series ? <button
+          {/* {series ? <button
             onClick={() =>setStep(1)}
             className={`w-full px-4 py-2 text-black border border-gray-50 bg-[#f2efef] rounded-full hover:bg-blue-700 ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
             disabled={loading}
@@ -528,7 +430,9 @@ const AddMovie: React.FC = () => {
             disabled={loading}
           >
             {loading ? "Submitting..." : "Add Movie"}
-          </button>}
+          </button>} */}
+
+          <button type="submit">{step === 0 ? "Next" : "Submit"}</button>
 
           {message && <p className="text-center mt-4 text-sm text-green-600">{message}</p>}
         </form>
