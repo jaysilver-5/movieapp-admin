@@ -13,7 +13,7 @@ export default clerkMiddleware(async (auth, req) => {
       await auth.protect();
     }
   } catch (error) {
-    console.error("Error in Clerk middleware:", error.message);
+    console.error("Error in Clerk middleware:");
     throw error; // Allow Clerk to handle the error properly
   }
 });
