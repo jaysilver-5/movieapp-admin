@@ -13,8 +13,9 @@ import {
   FaBars,
   FaChevronLeft,
 } from "react-icons/fa";
+import { withAuth } from '../../utils/withAuth'
 
-export default function DashboardPage() {
+const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -113,3 +114,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+export default withAuth(Dashboard);
