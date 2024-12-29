@@ -2,12 +2,30 @@ import React, { useState, useEffect } from "react";
 import { collection, doc, deleteDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 
+interface User {
+  id: string;
+  [key: string]: any; // For additional user properties
+}
+
+interface Movie {
+  id: string;
+  title: string;
+  type?: string;
+  episodes?: {
+    downloadLink: string;
+    episode: string;
+    season: string;
+    title: string;
+  }[];
+  [key: string]: any; // For additional movie properties
+}
+
 const AdminOverview = () => {
-  const [users, setUsers] = useState([]);
-  const [movies, setMovies] = useState([]);
+  const [users, setUsers] = useState<User[]>([]); // Explicitly typed state
+  const [movies, setMovies] = useState<Movie[]>([]); // Explicitly typed state
   const [search, setSearch] = useState("");
-  const [selectedMovies, setSelectedMovies] = useState([]);
-  const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedMovies, setSelectedMovies] = useState<string[]>([]); // IDs of selected movies
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Selected movie for adding episodes
   const [newEpisode, setNewEpisode] = useState({
     title: "",
     season: "",
@@ -19,29 +37,29 @@ const AdminOverview = () => {
   // Fetch users and movies from Firestore
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-      const usersData = snapshot.docs.map((doc) => ({
+      const usersData: User[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setUsers(usersData);
     });
 
-    const unsubscribeMovies = onSnapshot(collection(db, "movies"), (snapshot) => {
-      const moviesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setMovies(moviesData);
-    });
+    // const unsubscribeMovies = onSnapshot(collection(db, "movies"), (snapshot) => {
+    //   const moviesData: Movie[] = snapshot.docs.map((doc) => ({
+    //     id: doc.id,
+    //     ...doc.data(),
+    //   }));
+    //   setMovies(moviesData);
+    // });
 
     return () => {
       unsubscribeUsers();
-      unsubscribeMovies();
-    }; // Cleanup listeners
+      // unsubscribeMovies();
+    };
   }, []);
 
   // Handle Delete Movie
-  const handleDeleteMovie = async (id) => {
+  const handleDeleteMovie = async (id: any) => {
     try {
       await deleteDoc(doc(db, "movies", id));
       alert("Movie deleted successfully!");
@@ -63,7 +81,7 @@ const AdminOverview = () => {
   };
 
   // Open Add Episode Modal
-  const handleAddEpisodeModal = (movie) => {
+  const handleAddEpisodeModal = (movie: any) => {
     setSelectedMovie(movie);
     setIsModalOpen(true);
   };
@@ -158,7 +176,7 @@ const AdminOverview = () => {
                     />
                   </td>
                   <td className="p-2">{movie.title}</td>
-                  <td className="p-2">{movie.type || (movie.episodes?.length > 0 ? "Series" : "Movie")}</td>
+                  <td className="p-2">{movie.type || (movie.episodes?.length! > 0 ? "Series" : "Movie")}</td>
                   <td className="p-2">{movie.episodes?.length || 0}</td>
                   <td className="p-2">
                     <button
@@ -167,7 +185,7 @@ const AdminOverview = () => {
                     >
                       Delete
                     </button>
-                    {movie.episodes?.length > 0 && (
+                    {movie.episodes?.length! > 0 && (
                       <button
                         onClick={() => handleAddEpisodeModal(movie)}
                         className="bg-blue-500 text-white px-2 py-1 rounded"
