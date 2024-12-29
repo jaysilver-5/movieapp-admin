@@ -13,7 +13,6 @@ import {
   FaBars,
   FaChevronLeft,
 } from "react-icons/fa";
-import { withAuth } from '../../utils/withAuth'
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
@@ -115,4 +114,4 @@ const Dashboard = () => {
   );
 }
 
-export default withAuth(Dashboard);
+export default Dashboard;
