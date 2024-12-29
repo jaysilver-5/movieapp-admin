@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { collection, doc, deleteDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "../../firebase/firebase";
 
+// Interfaces
 interface User {
   id: string;
-  [key: string]: any; // For additional user properties
+  [key: string]: any;
 }
 
 interface Movie {
@@ -17,16 +18,97 @@ interface Movie {
     season: string;
     title: string;
   }[];
-  [key: string]: any; // For additional movie properties
+  [key: string]: any;
 }
 
+interface Episode {
+  title: string;
+  season: string;
+  episode: string;
+  downloadLink: string;
+}
+
+// Components
+const OverviewCard = ({
+  title,
+  value,
+  bgColor,
+}: {
+  title: string;
+  value: number;
+  bgColor: string;
+}) => (
+  <div className={`p-4 rounded shadow ${bgColor} text-white`}>
+    <h2 className="text-lg font-bold">{title}</h2>
+    <p className="text-2xl">{value}</p>
+  </div>
+);
+
+const Modal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  selectedMovie,
+  newEpisode,
+  setNewEpisode,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: () => void;
+  selectedMovie: Movie | null;
+  newEpisode: Episode;
+  setNewEpisode: React.Dispatch<React.SetStateAction<Episode>>;
+}) =>
+  isOpen ? (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+      <div className="bg-white p-6 rounded shadow-lg w-1/3">
+        <h2 className="text-lg font-bold mb-4">Add Episode to {selectedMovie?.title}</h2>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+        >
+          {["title", "season", "episode", "downloadLink"].map((field) => (
+            <div className="mb-4" key={field}>
+              <label className="block text-sm font-bold mb-2 capitalize">
+                {field.replace(/([A-Z])/g, " $1")}
+              </label>
+              <input
+                type="text"
+                value={(newEpisode as any)[field]}
+                onChange={(e) =>
+                  setNewEpisode({ ...newEpisode, [field]: e.target.value })
+                }
+                className="border border-gray-300 rounded p-2 w-full"
+                required
+              />
+            </div>
+          ))}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
+            >
+              Cancel
+            </button>
+            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+              Add Episode
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  ) : null;
+
 const AdminOverview = () => {
-  const [users, setUsers] = useState<User[]>([]); // Explicitly typed state
-  const [movies, setMovies] = useState<Movie[]>([]); // Explicitly typed state
+  const [users, setUsers] = useState<User[]>([]);
+  const [movies, setMovies] = useState<Movie[]>([]);
   const [search, setSearch] = useState("");
-  const [selectedMovies, setSelectedMovies] = useState<string[]>([]); // IDs of selected movies
-  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null); // Selected movie for adding episodes
-  const [newEpisode, setNewEpisode] = useState({
+  const [selectedMovies, setSelectedMovies] = useState<string[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [newEpisode, setNewEpisode] = useState<Episode>({
     title: "",
     season: "",
     episode: "",
@@ -34,32 +116,26 @@ const AdminOverview = () => {
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Fetch users and movies from Firestore
   useEffect(() => {
     const unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-      const usersData: User[] = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setUsers(usersData);
+      setUsers(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
     });
-
-    // const unsubscribeMovies = onSnapshot(collection(db, "movies"), (snapshot) => {
-    //   const moviesData: Movie[] = snapshot.docs.map((doc) => ({
-    //     id: doc.id,
-    //     ...doc.data(),
-    //   }));
-    //   setMovies(moviesData);
-    // });
-
+  
+    const unsubscribeMovies = onSnapshot(collection(db, "movies"), (snapshot) => {
+      setMovies(snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return { id: doc.id, title: data.title || "", ...data }; // Ensure `title` is present
+      }));
+    });
+  
     return () => {
       unsubscribeUsers();
-      // unsubscribeMovies();
+      unsubscribeMovies();
     };
   }, []);
+  
 
-  // Handle Delete Movie
-  const handleDeleteMovie = async (id: any) => {
+  const handleDeleteMovie = async (id: string) => {
     try {
       await deleteDoc(doc(db, "movies", id));
       alert("Movie deleted successfully!");
@@ -68,11 +144,9 @@ const AdminOverview = () => {
     }
   };
 
-  // Handle Bulk Delete
   const handleBulkDelete = async () => {
     try {
-      const deletePromises = selectedMovies.map((id) => deleteDoc(doc(db, "movies", id)));
-      await Promise.all(deletePromises);
+      await Promise.all(selectedMovies.map((id) => deleteDoc(doc(db, "movies", id))));
       setSelectedMovies([]);
       alert("Selected movies deleted successfully!");
     } catch (error) {
@@ -80,28 +154,15 @@ const AdminOverview = () => {
     }
   };
 
-  // Open Add Episode Modal
-  const handleAddEpisodeModal = (movie: any) => {
-    setSelectedMovie(movie);
-    setIsModalOpen(true);
-  };
-
-  // Handle Adding a New Episode
   const handleAddEpisode = async () => {
     if (!selectedMovie) return;
-
     const movieRef = doc(db, "movies", selectedMovie.id);
     try {
       const updatedEpisodes = [...(selectedMovie.episodes || []), newEpisode];
       await updateDoc(movieRef, { episodes: updatedEpisodes });
-      alert("Episode added successfully!");
       setIsModalOpen(false);
-      setNewEpisode({
-        title: "",
-        season: "",
-        episode: "",
-        downloadLink: "",
-      });
+      setNewEpisode({ title: "", season: "", episode: "", downloadLink: "" });
+      alert("Episode added successfully!");
     } catch (error) {
       console.error("Error adding episode:", error);
     }
@@ -109,19 +170,11 @@ const AdminOverview = () => {
 
   return (
     <div className="w-full p-4">
-      {/* Overview Section */}
       <div className="grid grid-cols-2 gap-4 mb-4">
-        <div className="bg-blue-500 text-white p-4 rounded shadow">
-          <h2 className="text-lg font-bold">Total Users</h2>
-          <p className="text-2xl">{users.length}</p>
-        </div>
-        <div className="bg-green-500 text-white p-4 rounded shadow">
-          <h2 className="text-lg font-bold">Total Movies</h2>
-          <p className="text-2xl">{movies.length}</p>
-        </div>
+        <OverviewCard title="Total Users" value={users.length} bgColor="bg-blue-500" />
+        <OverviewCard title="Total Movies" value={movies.length} bgColor="bg-green-500" />
       </div>
 
-      {/* Search & Bulk Delete */}
       <div className="flex justify-between items-center mb-4">
         <input
           type="text"
@@ -138,7 +191,6 @@ const AdminOverview = () => {
         </button>
       </div>
 
-      {/* Movies Table */}
       <div className="overflow-x-auto">
         <table className="table-auto w-full bg-white rounded shadow">
           <thead>
@@ -166,17 +218,17 @@ const AdminOverview = () => {
                     <input
                       type="checkbox"
                       checked={selectedMovies.includes(movie.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedMovies([...selectedMovies, movie.id]);
-                        } else {
-                          setSelectedMovies(selectedMovies.filter((id) => id !== movie.id));
-                        }
-                      }}
+                      onChange={(e) =>
+                        setSelectedMovies((prev) =>
+                          e.target.checked
+                            ? [...prev, movie.id]
+                            : prev.filter((id) => id !== movie.id)
+                        )
+                      }
                     />
                   </td>
                   <td className="p-2">{movie.title}</td>
-                  <td className="p-2">{movie.type || (movie.episodes?.length! > 0 ? "Series" : "Movie")}</td>
+                  <td className="p-2">{movie.type || "Movie"}</td>
                   <td className="p-2">{movie.episodes?.length || 0}</td>
                   <td className="p-2">
                     <button
@@ -185,9 +237,12 @@ const AdminOverview = () => {
                     >
                       Delete
                     </button>
-                    {movie.episodes?.length! > 0 && (
+                    {movie.episodes?.length !== undefined && (
                       <button
-                        onClick={() => handleAddEpisodeModal(movie)}
+                        onClick={() => {
+                          setSelectedMovie(movie);
+                          setIsModalOpen(true);
+                        }}
                         className="bg-blue-500 text-white px-2 py-1 rounded"
                       >
                         Add Episode
@@ -200,73 +255,14 @@ const AdminOverview = () => {
         </table>
       </div>
 
-      {/* Add Episode Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg w-1/3">
-            <h2 className="text-lg font-bold mb-4">Add Episode to {selectedMovie?.title}</h2>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddEpisode();
-              }}
-            >
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">Title</label>
-                <input
-                  type="text"
-                  value={newEpisode.title}
-                  onChange={(e) => setNewEpisode({ ...newEpisode, title: e.target.value })}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">Season</label>
-                <input
-                  type="text"
-                  value={newEpisode.season}
-                  onChange={(e) => setNewEpisode({ ...newEpisode, season: e.target.value })}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">Episode</label>
-                <input
-                  type="text"
-                  value={newEpisode.episode}
-                  onChange={(e) => setNewEpisode({ ...newEpisode, episode: e.target.value })}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-bold mb-2">Download Link</label>
-                <input
-                  type="text"
-                  value={newEpisode.downloadLink}
-                  onChange={(e) => setNewEpisode({ ...newEpisode, downloadLink: e.target.value })}
-                  className="border border-gray-300 rounded p-2 w-full"
-                  required
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-500 text-white px-4 py-2 rounded mr-2"
-                >
-                  Cancel
-                </button>
-                <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-                  Add Episode
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleAddEpisode}
+        selectedMovie={selectedMovie}
+        newEpisode={newEpisode}
+        setNewEpisode={setNewEpisode}
+      />
     </div>
   );
 };
